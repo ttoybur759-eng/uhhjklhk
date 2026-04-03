@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Income Tracker - Developer Toybur</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<style>
+body { font-family: Arial; margin:0; background:#dfe6e9; transition:0.4s; }
+.dark { background:#2d3436; color:white; }
+.container { width:90%; margin:auto; padding:20px; }
+h1{text-align:center;}
+.card { background:white; padding:20px; margin:20px 0; border-radius:12px; box-shadow:0 3px 12px rgba(0,0,0,0.15); transition:0.4s;}
+.dark .card { background:#636e72; }
+button { padding:12px 20px; border:none; background:#0984e3; color:white; border-radius:6px; cursor:pointer; font-size:16px; margin-top:10px;}
+button:hover{background:#0652DD;}
+input{width:95%; padding:12px; margin:8px 0; border-radius:6px; border:1px solid #b2bec3;}
+#dashboard,#adminPanel{display:none;}
+#profilePicPreview{width:80px; height:80px; border-radius:50%; background:#dfe6e9; margin-top:10px; object-fit:cover;}
+table{width:100%; border-collapse:collapse; margin-top:15px;}
+table,th,td{border:1px solid #b2bec3;}
+th,td{padding:10px; text-align:center;}
+th{background:#0984e3;color:white;}
+#exportBtn{background:#27ae60;}
+.linkBtn{background:transparent;color:#0984e3;border:none;text-decoration:underline;cursor:pointer;}
+.apkDiv{text-align:center;margin-top:30px;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>Income Tracker <br><small>Developer: Toybur</small></h1>
+
+<button onclick="toggleDarkMode()">ডার্ক / লাইট মোড</button>
+
+<!-- Login / Registration -->
+<div id="login" class="card">
+<h2>লগইন / রেজিস্ট্রেশন</h2>
+<input type="text" id="username" placeholder="ইউজারনেম লিখুন">
+<input type="password" id="password" placeholder="পাসওয়ার্ড লিখুন">
+<label>প্রোফাইল ছবি:</label>
+<input type="file" id="profilePic" accept="image/*" onchange="previewPic(event)">
+<img id="profilePicPreview" />
+<button onclick="loginUser()">লগইন / রেজিস্ট্রেশন</button>
+<br><br>
+<button class="linkBtn" onclick="forgotPassword()">পাসওয়ার্ড ভুলে গেছেন?</button>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="card">
+<h2>আপনার ইনকাম হিসাব</h2>
+<img id="userPhoto" width="80" height="80" style="border-radius:50%;" />
+<h3 id="welcomeUser"></h3>
+
+<label>মাসিক ইনকাম:</label>
+<input type="number" id="monthly" placeholder="মাসিক ইনকাম লিখুন">
+<label>সাপ্তাহিক ইনকাম:</label>
+<input type="number" id="weekly" placeholder="সাপ্তাহিক ইনকাম লিখুন">
+<label>বার্ষিক ইনকাম:</label>
+<input type="number" id="yearly" placeholder="বার্ষিক ইনকাম লিখুন">
+
+<button onclick="calculate()">হিসাব দেখুন</button>
+<div id="output"></div>
+</div>
+
+<!-- History -->
+<div id="history" class="card">
+<h2>হিস্ট্রি</h2>
+<table id="historyTable">
+<tr><th>মাসিক</th><th>সাপ্তাহিক</th><th>বার্ষিক</th><th>মোট ইনকাম</th><th>তারিখ</th></tr>
+</table>
+<button id="exportBtn" onclick="exportData()">CSV এক্সপোর্ট করুন</button>
+</div>
+
+<!-- APK Download -->
+<div class="apkDiv card">
+<h2>মোবাইল অ্যাপ ডাউনলোড করুন</h2>
+<a href="files/IncomeTracker.apk" download>
+<button>Download APK</button>
+</a>
+<p>ইনস্টল করতে হলে মোবাইলে Unknown Sources Enable করতে হবে।</p>
+</div>
+
+<!-- Admin Login -->
+<div id="adminLogin" class="card">
+<h2>অ্যাডমিন লগইন</h2>
+<input type="text" id="adminUser" placeholder="Admin Username">
+<input type="password" id="adminPass" placeholder="Admin Password">
+<button onclick="adminAccess()">লগইন</button>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="card">
+<h2>Admin Panel</h2>
+<p>মোট ইউজার: <span id="totalUsers"></span></p>
+<p>মোট হিস্ট্রি এন্ট্রি: <span id="totalHistory"></span></p>
+</div>
+
+</div>
+
+<script>
+// Dark Mode
+function toggleDarkMode(){
+document.body.classList.toggle('dark');
+localStorage.setItem('darkMode',document.body.classList.contains('dark'));
+}
+if(localStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
+
+// Profile pic preview
+function previewPic(event){
+document.getElementById('profilePicPreview').src = URL.createObjectURL(event.target.files[0]);
+}
+
+// Login
+function loginUser(){
+let user=document.getElementById('username').value;
+let pass=document.getElementById('password').value;
+if(user==='' || pass==='') return alert('সব তথ্য দিন!');
+let profilePic=document.getElementById('profilePicPreview').src;
+localStorage.setItem('incomeUser',user);
+localStorage.setItem('incomePass',pass);
+localStorage.setItem('profilePhoto',profilePic);
+document.getElementById('login').style.display='none';
+showDashboard();
+}
+
+// Show Dashboard
+function showDashboard(){
+let user=localStorage.getItem('incomeUser');
+let pic=localStorage.getItem('profilePhoto');
+document.getElementById('dashboard').style.display='block';
+document.getElementById('history').style.display='block';
+document.getElementById('welcomeUser').innerText='স্বাগতম, '+user;
+document.getElementById('userPhoto').src=pic;
+loadHistory();
+}
+
+// Password recovery
+function forgotPassword(){
+let pass=localStorage.getItem('incomePass');
+if(pass) alert('আপনার পাসওয়ার্ড: '+pass);
+else alert('কোনো একাউন্ট নেই!');
+}
+
+// Calculation + save
+function calculate(){
+let m=Number(document.getElementById('monthly').value);
+let w=Number(document.getElementById('weekly').value);
+let y=Number(document.getElementById('yearly').value);
+if(!m && !w && !y) return alert('কমপক্ষে একটি ইনকাম লিখুন!');
+let yearlyFromMonthly=m*12;
+let yearlyFromWeekly=w*52;
+let finalYear=y;
+let total=yearlyFromMonthly+yearlyFromWeekly+finalYear;
+let date=new Date().toLocaleString();
+let history=JSON.parse(localStorage.getItem('incomeHistory')||'[]');
+history.push({m,w,y,total,date});
+localStorage.setItem('incomeHistory',JSON.stringify(history));
+document.getElementById('output').innerHTML='মোট বার্ষিক ইনকাম: '+total+' টাকা';
+loadHistory();
+}
+
+// Load history
+function loadHistory(){
+let table=document.getElementById('historyTable');
+let history=JSON.parse(localStorage.getItem('incomeHistory')||'[]');
+table.innerHTML='<tr><th>মাসিক</th><th>সাপ্তাহিক</th><th>বার্ষিক</th><th>মোট ইনকাম</th><th>তারিখ</th></tr>';
+history.forEach(h=>{
+table.innerHTML+=`<tr>
+<td>${h.m}</td>
+<td>${h.w}</td>
+<td>${h.y}</td>
+<td>${h.total}</td>
+<td>${h.date}</td>
+</tr>`;
+});
+}
+
+// Export CSV
+function exportData(){
+let history=JSON.parse(localStorage.getItem('incomeHistory')||'[]');
+if(history.length===0) return alert('কোনো ডাটা নেই!');
+let csv='Monthly,Weekly,Yearly,Total,Date\n';
+history.forEach(h=>csv+=`${h.m},${h.w},${h.y},${h.total},${h.date}\n`);
+let blob=new Blob([csv],{type:'text/csv'});
+let a=document.createElement('a');
+a.href=URL.createObjectURL(blob);
+a.download='income_history.csv';
+a.click();
+}
+
+// Admin Login
+function adminAccess(){
+let user=document.getElementById('adminUser').value;
+let pass=document.getElementById('adminPass').value;
+if(user==='toybur666' && pass==='toybur666'){
+document.getElementById('adminPanel').style.display='block';
+let totalUsers=localStorage.getItem('incomeUser')?1:0;
+let totalHistory=JSON.parse(localStorage.getItem('incomeHistory')||'[]').length;
+document.getElementById('totalUsers').innerText=totalUsers;
+document.getElementById('totalHistory').innerText=totalHistory;
+}else{alert('ভুল অ্যাডমিন তথ্য!');}
+}
+</script>
+
+</body>
+</html>
